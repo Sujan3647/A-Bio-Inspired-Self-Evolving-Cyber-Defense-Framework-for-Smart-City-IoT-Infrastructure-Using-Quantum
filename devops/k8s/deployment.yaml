@@ -1,0 +1,212 @@
+---
+# ImmunoGrid — Kubernetes Deployment Manifests
+# Deploy on AWS EKS: kubectl apply -f deployment.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: immunogrid
+  labels:
+    app: immunogrid
+    project: bio-inspired-defense
+
+---
+# ── Backend API Deployment ────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immunogrid-api
+  namespace: immunogrid
+  labels:
+    app: immunogrid-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: immunogrid-api
+  template:
+    metadata:
+      labels:
+        app: immunogrid-api
+    spec:
+      containers:
+        - name: api
+          image: immunogrid/api:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: immunogrid-secrets
+                  key: postgres_host
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: immunogrid-secrets
+                  key: jwt_secret
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+---
+# ── API Service ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: immunogrid-api-svc
+  namespace: immunogrid
+spec:
+  selector:
+    app: immunogrid-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# ── Frontend Deployment ────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immunogrid-frontend
+  namespace: immunogrid
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: immunogrid-frontend
+  template:
+    metadata:
+      labels:
+        app: immunogrid-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: immunogrid/frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+# ── Frontend Service ───────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: immunogrid-frontend-svc
+  namespace: immunogrid
+spec:
+  selector:
+    app: immunogrid-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+# ── Ingress (AWS ALB) ──────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immunogrid-ingress
+  namespace: immunogrid
+  annotations:
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID"
+spec:
+  rules:
+    - host: immunogrid.gov.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: immunogrid-api-svc
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: immunogrid-frontend-svc
+                port:
+                  number: 80
+
+---
+# ── Horizontal Pod Autoscaler ──────────────────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: immunogrid-api-hpa
+  namespace: immunogrid
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: immunogrid-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+---
+# ── ConfigMap ──────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immunogrid-config
+  namespace: immunogrid
+data:
+  APP_NAME: "ImmunoGrid"
+  QUANTUM_BACKEND: "AerSimulator"
+  FL_MIN_CLIENTS: "10"
+  BLOCKCHAIN_DIFFICULTY: "2"
+  HONEYPOT_BASE_COUNT: "5"
+  LOG_LEVEL: "INFO"
+
+---
+# ── Secrets (values set via kubectl or AWS Secrets Manager) ────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: immunogrid-secrets
+  namespace: immunogrid
+type: Opaque
+stringData:
+  postgres_host: "immunogrid-postgres.cluster.local"
+  jwt_secret: "REPLACE_WITH_ACTUAL_SECRET"
+  aws_access_key: "REPLACE_WITH_AWS_KEY"
+  aws_secret_key: "REPLACE_WITH_AWS_SECRET"

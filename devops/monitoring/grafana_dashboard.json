@@ -1,0 +1,131 @@
+{
+  "title": "ImmunoGrid — Smart City Cyber Defense",
+  "description": "Real-time monitoring of ImmunoGrid security platform",
+  "tags": ["immunogrid", "security", "iot", "quantum", "blockchain"],
+  "timezone": "UTC",
+  "schemaVersion": 36,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "title": "🛡️ Detection Rate",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 0, "y": 0},
+      "targets": [{"expr": "immunogrid_fp_detection_rate * 100", "legendFormat": "QFP %"}],
+      "options": {"colorMode": "background", "graphMode": "area", "textMode": "value_and_name"},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 80, "max": 100,
+        "thresholds": {"steps": [{"color":"red","value":0},{"color":"yellow","value":90},{"color":"green","value":95}]}}}
+    },
+    {
+      "id": 2, "title": "⚔️ Attacks Today",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 3, "y": 0},
+      "targets": [{"expr": "immunogrid_attacks_total", "legendFormat": "Attacks"}],
+      "fieldConfig": {"defaults": {"unit": "short",
+        "thresholds": {"steps": [{"color":"green","value":0},{"color":"yellow","value":20},{"color":"red","value":50}]}}}
+    },
+    {
+      "id": 3, "title": "📡 Devices Online",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 6, "y": 0},
+      "targets": [{"expr": "immunogrid_devices_online", "legendFormat": "Online"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode":"thresholds"},
+        "thresholds": {"steps": [{"color":"red","value":0},{"color":"yellow","value":400},{"color":"green","value":480}]}}}
+    },
+    {
+      "id": 4, "title": "⛓️ Chain Length",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 9, "y": 0},
+      "targets": [{"expr": "immunogrid_blockchain_length", "legendFormat": "Blocks"}],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 5, "title": "🔄 Morphogenesis Events",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 12, "y": 0},
+      "targets": [{"expr": "immunogrid_morphogenesis_total", "legendFormat": "Events"}],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 6, "title": "🤖 FL Accuracy",
+      "type": "gauge", "gridPos": {"h": 4, "w": 3, "x": 15, "y": 0},
+      "targets": [{"expr": "immunogrid_fl_accuracy * 100", "legendFormat": "Accuracy"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 80, "max": 100,
+        "thresholds": {"steps": [{"color":"red","value":0},{"color":"yellow","value":90},{"color":"green","value":95}]}}}
+    },
+    {
+      "id": 7, "title": "⛓️ Blockchain Valid",
+      "type": "stat", "gridPos": {"h": 4, "w": 3, "x": 18, "y": 0},
+      "targets": [{"expr": "immunogrid_blockchain_valid", "legendFormat": "Valid"}],
+      "fieldConfig": {"defaults": {"mappings": [{"type":"value","options":{"0":{"text":"❌ INVALID","color":"red"},"1":{"text":"✅ Valid","color":"green"}}}]}}
+    },
+    {
+      "id": 8, "title": "⚔️ Attack Rate (attacks/min)",
+      "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "rate(immunogrid_attacks_total[1m]) * 60", "legendFormat": "Attacks/min"},
+        {"expr": "rate(immunogrid_messages_total[1m]) * 60", "legendFormat": "Messages/min"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"},
+        "overrides": [{"matcher":{"id":"byName","options":"Attacks/min"},"properties":[{"id":"color","value":{"fixedColor":"red","mode":"fixed"}}]}]}
+    },
+    {
+      "id": 9, "title": "⚛️ Quantum FP Checks/sec",
+      "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"expr": "rate(immunogrid_qf_checks_total[1m])", "legendFormat": "Checks/sec"},
+        {"expr": "rate(immunogrid_impostors_detected_total[1m])", "legendFormat": "Impostors/sec"}
+      ]
+    },
+    {
+      "id": 10, "title": "🤖 FL Model Accuracy (history)",
+      "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{"expr": "immunogrid_fl_accuracy * 100", "legendFormat": "Accuracy %"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 80, "max": 100}}
+    },
+    {
+      "id": 11, "title": "🍯 Honeypot Activity",
+      "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {"expr": "immunogrid_honeypot_active", "legendFormat": "Active Decoys"},
+        {"expr": "rate(immunogrid_honeypot_interactions_total[5m]) * 60", "legendFormat": "Interactions/min"}
+      ]
+    },
+    {
+      "id": 12, "title": "🏙️ Threats by Sector",
+      "type": "bargauge", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 20},
+      "targets": [{"expr": "immunogrid_threats_by_sector", "legendFormat": "{{sector}}"}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient"}
+    },
+    {
+      "id": 13, "title": "⚔️ Attack Type Distribution",
+      "type": "piechart", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 20},
+      "targets": [{"expr": "immunogrid_attacks_by_type", "legendFormat": "{{attack_type}}"}]
+    },
+    {
+      "id": 14, "title": "🛡️ Detection by Mechanism",
+      "type": "bargauge", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 20},
+      "targets": [{"expr": "immunogrid_detections_by_mechanism", "legendFormat": "{{mechanism}}"}],
+      "options": {"orientation": "horizontal"}
+    },
+    {
+      "id": 15, "title": "💻 API Latency (p50/p95/p99)",
+      "type": "timeseries", "gridPos": {"h": 6, "w": 12, "x": 0, "y": 28},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 16, "title": "🐳 Pod Status (Kubernetes)",
+      "type": "table", "gridPos": {"h": 6, "w": 12, "x": 12, "y": 28},
+      "targets": [{"expr": "kube_pod_status_phase{namespace='immunogrid'}", "legendFormat": "{{pod}} — {{phase}}"}]
+    },
+    {
+      "id": 17, "title": "🔄 Morphogenesis Timeline",
+      "type": "timeseries", "gridPos": {"h": 6, "w": 24, "x": 0, "y": 34},
+      "targets": [
+        {"expr": "rate(immunogrid_morphogenesis_total[5m]) * 60", "legendFormat": "Events/min"},
+        {"expr": "immunogrid_honeypot_count", "legendFormat": "Honeypot Count"},
+        {"expr": "immunogrid_fp_sensitivity", "legendFormat": "FP Sensitivity"}
+      ]
+    }
+  ]
+}

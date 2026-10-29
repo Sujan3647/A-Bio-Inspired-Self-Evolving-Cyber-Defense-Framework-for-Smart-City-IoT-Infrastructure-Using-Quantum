@@ -1,0 +1,116 @@
+% ImmunoGrid — Section V: Morphogenetic Blockchain
+
+\section{Morphogenetic Blockchain}
+\label{sec:mb}
+
+\subsection{Overview}
+
+The Morphogenetic Blockchain (MB) extends conventional permissioned blockchain
+with an autonomous defense restructuring capability. Every detected attack
+triggers two simultaneous operations:
+
+\begin{enumerate}
+  \item \textbf{Immune Memory:} An immutable \texttt{AttackRecord} is appended
+        to the ledger, recording the attack signature permanently.
+  \item \textbf{Morphogenesis:} Smart contracts execute defense reconfiguration
+        actions that physically reshape the network topology.
+\end{enumerate}
+
+\subsection{Immune Memory}
+
+Each \texttt{AttackRecord} entry stores:
+$(\text{record\_id}, \text{attack\_type}, \text{device\_id}, \text{sector},
+\text{severity}, \text{attacker\_signature}, \text{detected\_by},
+\text{morphogenesis\_actions}, \text{timestamp}, \text{data\_hash})$.
+
+The hash chain ensures tamper-resistance:
+\begin{equation}
+H_k = \text{SHA-256}(\text{data}_k \,\|\, H_{k-1} \,\|\, \text{nonce}_k)
+\label{eq:hash_chain}
+\end{equation}
+
+The immune memory enables instant pattern recognition: when the same attack
+type targets the same sector again, the blockchain confirms prior occurrence
+in $O(1)$ time via attack pattern index lookup, triggering an elevated response.
+
+\subsection{Morphogenesis Smart Contract}
+
+The morphogenesis engine maps attack events to topology actions:
+
+\begin{equation}
+\mathcal{M}(a_t, \sigma_t, s_t) \rightarrow \{r_1, r_2, \ldots, r_k\}
+\label{eq:morphogenesis}
+\end{equation}
+
+where $a_t$ is the attack type, $\sigma_t \in \{\text{low, medium, high, critical}\}$
+is severity, and $s_t$ is the target sector. Table~\ref{tab:morphogenesis_rules}
+shows the complete action mapping.
+
+\begin{table}[h]
+\caption{Morphogenesis Smart Contract Rules}
+\label{tab:morphogenesis_rules}
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Attack Type} & \textbf{Severity} & \textbf{Actions} \\
+\midrule
+Spoofing & any & broadcast\_alert, spawn\_honeypots, \\
+         &     & increase\_fp\_sensitivity \\
+Spoofing & high/critical & + quarantine\_device \\
+DDoS     & any & broadcast\_alert, update\_firewall, \\
+         &     & reroute\_traffic \\
+DDoS     & critical & + isolate\_sector \\
+Data Poisoning & any & broadcast\_alert, quarantine\_device, \\
+               &     & update\_firewall \\
+Replay/Ransomware & any & broadcast\_alert, quarantine\_device, \\
+                  &     & spawn\_honeypots \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Implementation: Solidity and Hyperledger Fabric}
+
+ImmunoGrid implements the Morphogenetic Blockchain on two platforms:
+
+\textbf{Ethereum-compatible (Solidity):} Six contracts deployed on Hyperledger
+Besu or Ethereum testnet: \texttt{ImmunoGrid.sol} (attack registry + morphogenesis),
+\texttt{ImmunoGridKeyRegistry.sol} (PQC key management), \texttt{ImmunoGridFL.sol}
+(FL model provenance), \texttt{ImmunoGridHoneypot.sol} (threat intelligence),
+\texttt{ImmunoGridAccess.sol} (13-role RBAC), and \texttt{ImmunoGridOracle.sol}
+(real-time threat feed for external contracts).
+
+\textbf{Hyperledger Fabric (Go chaincode):} For enterprise deployments requiring
+PBFT consensus and permissioned access. A four-node network (two organizations)
+provides $f=1$ Byzantine fault tolerance with quorum $q = 2f+1 = 3$.
+
+\subsection{PBFT Consensus}
+
+Attack records are written to the ledger only after PBFT consensus:
+
+\begin{enumerate}
+  \item Client proposes \texttt{RecordAttack} transaction
+  \item Primary broadcasts PREPARE; $\geq 3/4$ nodes vote
+  \item Primary sends COMMIT; $\geq 3/4$ nodes confirm
+  \item Transaction finalized; morphogenesis executes
+\end{enumerate}
+
+With $f=1$ faulty nodes tolerated, a single Byzantine node cannot inject
+false attack records or prevent legitimate ones from being written.
+Empirically, PBFT consensus completes in $<5$ms on our four-node simulation.
+
+\subsection{Honeypot Intelligence Loop}
+
+The Morphogenetic Blockchain creates a closed intelligence loop with the
+honeypot network:
+
+\[
+\text{Attack} \xrightarrow{\text{QBF/FAC}} \text{Honeypot Spawn}
+\xrightarrow{\text{capture}} \text{Intelligence Report}
+\xrightarrow{\text{MB commit}} \text{Immune Memory}
+\xrightarrow{\text{FAC training}} \text{Pre-hardening}
+\]
+
+Each captured attacker behavioral signature is stored immutably on-chain,
+fed as labeled training data to the FAC Defender, and used to calibrate
+the QBF fidelity threshold — forming a self-reinforcing defense cycle.

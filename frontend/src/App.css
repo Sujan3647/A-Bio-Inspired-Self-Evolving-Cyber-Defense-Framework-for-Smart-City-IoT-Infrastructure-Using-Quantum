@@ -1,0 +1,15 @@
+/* ImmunoGrid Dark Theme Keyframes & Utility Animations */
+@keyframes cyberPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-cyber-pulse {
+  animation: cyberPulse 2.5s infinite ease-in-out;
+}

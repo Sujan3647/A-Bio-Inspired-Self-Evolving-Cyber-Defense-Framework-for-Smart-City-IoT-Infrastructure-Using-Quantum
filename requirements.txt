@@ -1,0 +1,71 @@
+# ============================================================
+# ImmunoGrid — Python Requirements
+# ============================================================
+
+# IoT Simulator
+paho-mqtt==1.6.1
+asyncio-mqtt==0.16.2
+faker==24.2.0
+numpy==1.26.4
+pandas==2.2.1
+
+# Quantum Computing
+qiskit==1.0.2
+qiskit-aer==0.14.0.1
+pennylane==0.36.0
+
+# Post-Quantum Cryptography
+# liboqs-python must be installed from source:
+# https://github.com/open-quantum-safe/liboqs-python
+cryptography==42.0.5
+pycryptodome==3.20.0
+
+# AI / ML — Federated Adversarial Consciousness
+torch==2.2.1
+torchvision==0.17.1
+scikit-learn==1.4.2
+flwr==1.8.0
+matplotlib==3.8.3
+seaborn==0.13.2
+
+# Backend — FastAPI Microservices
+fastapi==0.110.0
+uvicorn==0.29.0
+pydantic==2.6.4
+python-jose==3.3.0
+passlib==1.7.4
+bcrypt==4.1.2
+python-multipart==0.0.9
+httpx==0.27.0
+websockets==12.0
+
+# Database
+sqlalchemy==2.0.29
+psycopg2-binary==2.9.9
+pymongo==4.7.1
+redis==5.0.3
+alembic==1.13.1
+
+# AWS
+boto3==1.34.75
+botocore==1.34.75
+
+# Blockchain (Hyperledger Fabric SDK)
+web3==6.11.4          # 6.15.1 has a broken pytest plugin (eth_typing conflict)
+
+# Honeypot
+scapy==2.5.0
+
+# Monitoring & Logging
+prometheus-client==0.20.0
+structlog==24.1.0
+
+# Testing
+pytest==8.1.1
+pytest-asyncio==0.23.6
+httpx==0.27.0
+
+# Dev Tools
+python-dotenv==1.0.1
+rich==13.7.1
+typer

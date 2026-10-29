@@ -1,0 +1,145 @@
+# ImmunoGrid — Hyperledger Fabric Channel Configuration
+
+Organizations:
+
+  - &ImmunoGridOrderer
+    Name: ImmunoGridOrderer
+    ID:   ImmunoGridOrdererMSP
+    MSPDir: crypto-config/ordererOrganizations/immunogrid.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrdererMSP.admin')"
+
+  - &Org1
+    Name: ImmunoGridOrg1MSP
+    ID:   ImmunoGridOrg1MSP
+    MSPDir: crypto-config/peerOrganizations/org1.immunogrid.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrg1MSP.admin','ImmunoGridOrg1MSP.peer','ImmunoGridOrg1MSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrg1MSP.admin','ImmunoGridOrg1MSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ImmunoGridOrg1MSP.admin')"
+    AnchorPeers:
+      - Host: peer0.org1.immunogrid.gov
+        Port: 7051
+
+  - &SecurityOrg
+    Name: SecurityOrgMSP
+    ID:   SecurityOrgMSP
+    MSPDir: crypto-config/peerOrganizations/security.immunogrid.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('SecurityOrgMSP.admin','SecurityOrgMSP.peer','SecurityOrgMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('SecurityOrgMSP.admin','SecurityOrgMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('SecurityOrgMSP.admin')"
+    AnchorPeers:
+      - Host: peer0.security.immunogrid.gov
+        Port: 9051
+
+Capabilities:
+  Channel:   &ChannelCapabilities   { V2_0: true }
+  Orderer:   &OrdererCapabilities   { V2_0: true }
+  Application: &ApplicationCapabilities { V2_5: true }
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.immunogrid.gov:7050
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.immunogrid.gov
+        Port: 7050
+        ClientTLSCert: crypto-config/ordererOrganizations/immunogrid.gov/orderers/orderer.immunogrid.gov/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/immunogrid.gov/orderers/orderer.immunogrid.gov/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount:   10
+    AbsoluteMaxBytes:  99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities: *ChannelCapabilities
+
+Profiles:
+  ImmunoGridOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *ImmunoGridOrderer
+    Consortiums:
+      ImmunoGridConsortium:
+        Organizations:
+          - *Org1
+          - *SecurityOrg
+
+  ImmunoGridChannel:
+    Consortium: ImmunoGridConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Org1
+        - *SecurityOrg

@@ -1,0 +1,41 @@
+# ImmunoGrid — Hyperledger Fabric Crypto Configuration
+# Generates cryptographic material for all network participants
+
+OrdererOrgs:
+  - Name: ImmunoGridOrderer
+    Domain: immunogrid.gov
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: ImmunoGridOrg1
+    Domain: org1.immunogrid.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 3
+
+  - Name: SecurityOrg
+    Domain: security.immunogrid.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 2
+
+  - Name: AuditOrg
+    Domain: audit.immunogrid.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+
+  - Name: GovernmentOrg
+    Domain: govt.immunogrid.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 5

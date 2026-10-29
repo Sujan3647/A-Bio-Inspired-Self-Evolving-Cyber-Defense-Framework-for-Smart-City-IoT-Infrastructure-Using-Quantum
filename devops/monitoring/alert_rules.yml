@@ -1,0 +1,179 @@
+groups:
+  # ── ImmunoGrid Security Alerts ────────────────────────────────────────────
+  - name: immunogrid_security
+    rules:
+
+      - alert: HighAttackRate
+        expr: sum(rate(immunogrid_attacks_total[5m])) * 60 > 30
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "🚨 High attack rate — {{ $value | humanize }} attacks/min"
+          description: |
+            Attack rate exceeds 30/min for 1 minute.
+            Possible coordinated attack or DDoS.
+            Auto-morphogenesis should be triggered.
+          runbook: "https://wiki.immunogrid.gov/runbooks/high-attack-rate"
+
+      - alert: LowQuantumFPDetectionRate
+        expr: immunogrid_fp_detection_rate < 0.90
+        for: 5m
+        labels:
+          severity: warning
+          team: quantum
+        annotations:
+          summary: "⚛️ Quantum FP detection rate below 90%: {{ $value | humanizePercentage }}"
+          description: |
+            The Quantum Behavioral Fingerprint engine is below 90% detection rate.
+            This may indicate an increase in sophisticated spoofing attacks.
+            Consider increasing fidelity threshold or re-registering affected devices.
+
+      - alert: BlockchainIntegrityFailure
+        expr: immunogrid_blockchain_valid == 0
+        for: 0m
+        labels:
+          severity: critical
+          team: blockchain
+        annotations:
+          summary: "⛓️ CRITICAL: Blockchain integrity check failed"
+          description: |
+            The morphogenetic blockchain chain validation has failed.
+            This indicates possible tampering or data corruption.
+            Immediate investigation required.
+
+      - alert: FLModelAccuracyDrop
+        expr: immunogrid_fl_accuracy < 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "🤖 FL model accuracy below 90%: {{ $value | humanizePercentage }}"
+          description: |
+            The Federated Adversarial Consciousness model accuracy has dropped.
+            Possible Byzantine gradient poisoning attack.
+            Review recent client gradient submissions.
+
+      - alert: ByzantineGradientInjection
+        expr: increase(immunogrid_byzantine_detected_total[10m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+          team: ai
+        annotations:
+          summary: "🔱 Byzantine gradient injection detected: {{ $value }} attacks in 10m"
+          description: |
+            Multiple Byzantine gradient injection attempts detected in the FL system.
+            FedMedian/FLAME defense is active but investigation recommended.
+
+      - alert: HoneypotOverloaded
+        expr: immunogrid_honeypot_interactions_total > 500
+        for: 5m
+        labels:
+          severity: warning
+          team: honeypot
+        annotations:
+          summary: "🍯 Honeypots receiving high interaction volume: {{ $value }}"
+          description: |
+            Honeypot interaction count is very high, suggesting active attacker probing.
+            Consider spawning additional honeypots and reviewing intelligence reports.
+
+  # ── Infrastructure Alerts ─────────────────────────────────────────────────
+  - name: immunogrid_infrastructure
+    rules:
+
+      - alert: DeviceOfflineSurge
+        expr: immunogrid_devices_offline > 50
+        for: 5m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "📡 {{ $value }} IoT devices offline"
+          description: |
+            More than 50 devices offline simultaneously.
+            Possible DDoS attack, network partition, or ransomware spreading.
+
+      - alert: APIHighErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m]) /
+          rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "🌐 API error rate {{ $value | humanizePercentage }} above 5%"
+          description: "Backend API is experiencing elevated error rates."
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "⏱️ API p95 latency {{ $value | humanizeDuration }} above 2s"
+          description: "API response times are degraded. Possible load or attack."
+
+      - alert: DatabaseConnectionExhausted
+        expr: pg_stat_database_numbackends{datname="immunogrid_prod"} > 90
+        for: 2m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "🗄️ PostgreSQL connection pool near limit: {{ $value }}"
+          description: "PostgreSQL is near max connections. Risk of connection refusal."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "💻 CPU usage {{ $value | humanize }}% on {{ $labels.instance }}"
+          description: "Host CPU usage above 85% for 10 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "🧠 Memory usage {{ $value | humanize }}% on {{ $labels.instance }}"
+          description: "Host memory usage above 90%."
+
+      - alert: DiskSpaceLow
+        expr: (1 - node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 > 85
+        for: 15m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "💾 Disk usage {{ $value | humanize }}% on {{ $labels.instance }}"
+          description: "Disk space above 85%. Clean up old logs and data."
+
+      - alert: PodCrashLooping
+        expr: increase(kube_pod_container_status_restarts_total{namespace="immunogrid"}[1h]) > 5
+        for: 5m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "🐳 Pod {{ $labels.pod }} crash-looping: {{ $value }} restarts/hr"
+          description: "A critical ImmunoGrid pod is crash-looping."
+
+      - alert: MQTTBrokerDown
+        expr: up{job="immunogrid-mqtt"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "📡 MQTT broker is DOWN"
+          description: "IoT message broker unreachable. All IoT device data flow stopped."

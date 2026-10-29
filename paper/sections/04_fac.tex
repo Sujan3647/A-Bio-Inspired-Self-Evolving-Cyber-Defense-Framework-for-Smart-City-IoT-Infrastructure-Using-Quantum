@@ -1,0 +1,96 @@
+% ImmunoGrid — Section IV: Federated Adversarial Consciousness
+
+\section{Federated Adversarial Consciousness}
+\label{sec:fac}
+
+\subsection{Architecture Overview}
+
+Each IoT device $d_i$ maintains two co-adversarial neural networks:
+
+\begin{itemize}
+  \item $\mathcal{D}_i(\mathbf{x}; \boldsymbol{\theta}_D)$: Defender (Discriminator)
+        — classifies traffic as normal or attack type
+  \item $\mathcal{G}_i(\mathbf{z}, c; \boldsymbol{\theta}_G)$: Attacker (Generator)
+        — synthesizes adversarial attack feature vectors conditioned on attack class $c$
+\end{itemize}
+
+\subsection{Local GAN Training}
+
+The Defender minimizes cross-entropy loss over real traffic
+$\mathbf{X}_\text{real}$ and GAN-generated attack imaginations
+$\tilde{\mathbf{X}} = \mathcal{G}(\mathbf{z}, c)$:
+
+\begin{equation}
+\mathcal{L}_D = -\mathbb{E}\left[\log D(\mathbf{x}_\text{real})\right]
+              - \mathbb{E}\left[\log(1 - D(\mathcal{G}(\mathbf{z}, c)))\right]
++ \lambda\,\mathcal{L}_\text{CE}(\hat{y}, y)
+\label{eq:defender_loss}
+\end{equation}
+
+where $\mathcal{L}_\text{CE}$ is the classification loss and $\lambda = 0.5$.
+
+The Attacker maximizes Defender confusion:
+
+\begin{equation}
+\mathcal{L}_G = -\mathbb{E}\left[\log D(\mathcal{G}(\mathbf{z}, c))\right]
+              + \lambda\,\mathcal{L}_\text{CE}(\hat{c}, c)
+\label{eq:attacker_loss}
+\end{equation}
+
+\subsection{Imagination Generation}
+
+After each local training round, each device generates $K = 5$ adversarial
+imaginations per round:
+
+\begin{equation}
+\hat{\mathbf{x}}_k = \mathcal{G}_i(\mathbf{z}_k,\, c_k),\quad
+\mathbf{z}_k \sim \mathcal{N}(0, I),\quad
+c_k \sim \mathcal{U}\{1, \ldots, 6\}
+\label{eq:imagination}
+\end{equation}
+
+These synthetic attack vectors are shared with the FL aggregator
+\emph{instead of} raw sensor data, preserving privacy.
+
+\subsection{Federated Aggregation with FedAvg}
+
+The FL aggregator on AWS SageMaker collects Defender weights from all
+participating devices and applies FedAvg:
+
+\begin{equation}
+\boldsymbol{\theta}_D^{t+1} = \sum_{i=1}^{N} \frac{n_i}{n}\,\boldsymbol{\theta}_{D,i}^t
+\label{eq:fedavg}
+\end{equation}
+
+where $n_i$ is device $i$'s local training sample count and
+$n = \sum_{i=1}^N n_i$.
+
+Only Generator weights are shared for improving global imagination quality —
+Discriminator (Defender) weights are kept local or distributed globally
+depending on the trust model.
+
+\subsection{Differential Privacy}
+
+Before sharing Generator imaginations, each device applies the Gaussian
+mechanism to provide $(\varepsilon, \delta)$-DP:
+
+\begin{equation}
+\tilde{\mathbf{g}} = \text{clip}(\mathbf{g}, C) + \mathcal{N}\!\left(0,\, \sigma^2 C^2 I\right)
+\label{eq:dp}
+\end{equation}
+
+where $C = 1.0$ is the gradient clipping bound, $\sigma = 1.1$ is the
+noise multiplier, and we achieve $(\varepsilon = 1.0, \delta = 10^{-5})$-DP
+per FL round via the Gaussian mechanism.
+
+\subsection{Collective Pre-Hardening}
+
+The key insight of FAC is that sharing imaginations rather than data enables
+\emph{collective pre-hardening}: device A's imagination of a 3AM DDoS attack
+trains device B's Defender, even though device B has never experienced this
+attack. The network pre-hardens against attacks that have not yet occurred,
+transitioning from reactive to proactive defense.
+
+After $R$ rounds, the global Defender has been trained on imaginations from
+all $N$ devices, effectively experiencing $N \times K \times R$ synthetic
+attack scenarios without any device sharing raw data.

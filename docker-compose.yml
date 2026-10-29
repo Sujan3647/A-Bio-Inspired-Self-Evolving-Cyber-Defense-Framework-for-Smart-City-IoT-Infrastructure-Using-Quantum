@@ -1,0 +1,164 @@
+# ImmunoGrid — Root Docker Compose
+# Runs the complete stack: Backend + Databases + MQTT + Monitoring
+#
+# Usage:
+#   docker-compose up -d           Start all services
+#   docker-compose down -v         Stop + remove volumes
+#   docker-compose logs -f api     Follow API logs
+
+services:
+
+  # ── ImmunoGrid Backend API ─────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: immunogrid-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=immunogrid
+      - POSTGRES_USER=immunogrid_user
+      - POSTGRES_PASSWORD=immunogrid_pass
+      - MONGO_URI=mongodb://mongo:27017/immunogrid
+      - REDIS_URL=redis://redis:6379
+      - MQTT_BROKER_HOST=mqtt
+      - MQTT_BROKER_PORT=1883
+      - JWT_SECRET_KEY=immunogrid-dev-secret-change-in-prod
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo:    { condition: service_started }
+      redis:    { condition: service_started }
+      mqtt:     { condition: service_started }
+      localstack: { condition: service_started }
+    volumes:
+      - ./backend:/app
+      - ./:/project
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: immunogrid-postgres
+    environment:
+      POSTGRES_DB:       immunogrid
+      POSTGRES_USER:     immunogrid_user
+      POSTGRES_PASSWORD: immunogrid_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U immunogrid_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7-jammy
+    container_name: immunogrid-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: immunogrid-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # ── MQTT Broker (Mosquitto) ────────────────────────────────────────────────
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: immunogrid-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./backend/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
+  # ── Frontend (Nginx) ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: immunogrid-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ── Prometheus ─────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: immunogrid-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./devops/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./devops/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
+
+  # ── Grafana ────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: immunogrid-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=immunogrid_admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ── LocalStack (AWS Emulation) ─────────────────────────────────────────────
+  localstack:
+    image: localstack/localstack:3.2
+    container_name: immunogrid-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,sns,sqs,iot,cloudwatch
+      - AWS_DEFAULT_REGION=us-east-1
+      - EDGE_PORT=4566
+    volumes:
+      - localstack_data:/var/lib/localstack
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongo_data:
+  prometheus_data:
+  grafana_data:
+  localstack_data:
+
+networks:
+  default:
+    name: immunogrid-network

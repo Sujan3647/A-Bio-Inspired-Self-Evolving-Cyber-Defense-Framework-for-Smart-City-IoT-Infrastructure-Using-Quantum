@@ -1,0 +1,117 @@
+% ImmunoGrid — Section I: Introduction
+% Include in main.tex: \input{sections/01_introduction}
+
+\section{Introduction}
+\label{sec:intro}
+
+\IEEEPARstart{T}{he} rapid proliferation of Internet of Things (IoT) devices
+in modern smart cities has created cybersecurity attack surfaces of unprecedented
+scale and heterogeneity. A contemporary smart city may deploy hundreds of thousands
+of connected sensors, actuators, cameras, and monitoring systems spanning critical
+infrastructure domains including transportation, healthcare, water treatment, power
+distribution, and public safety~\cite{zanella2014iot}.
+
+\subsection{Motivation}
+
+The cybersecurity threat landscape for smart city IoT environments presents four
+fundamental challenges that distinguish it from traditional enterprise security:
+
+\begin{enumerate}
+  \item \textbf{Device Heterogeneity}: Thousands of resource-constrained devices
+        from diverse manufacturers operate with incompatible security postures,
+        making uniform patching and centralized key management impractical.
+
+  \item \textbf{Criticality Asymmetry}: A compromised hospital ventilator, water
+        treatment sensor, or power grid controller can directly endanger human
+        lives — far exceeding the stakes of traditional network intrusions.
+
+  \item \textbf{Quantum Threat Horizon}: The imminent era of cryptographically-relevant
+        quantum computers threatens RSA and ECC algorithms securing most IoT
+        communication today. Shor's algorithm factorizes RSA-2048 in
+        approximately eight hours on a 4000-qubit fault-tolerant quantum
+        computer~\cite{shor1994algorithms}, while Grover's algorithm reduces
+        AES-128 brute-force from $O(2^{128})$ to $O(2^{64})$ operations~\cite{grover1996search}.
+
+  \item \textbf{Reactive Defense Gap}: Current intrusion detection systems detect
+        attacks after they have already caused damage. The average breach detection
+        time exceeds 200 days in critical infrastructure deployments, while
+        morphogenetic defense can respond in sub-millisecond time.
+\end{enumerate}
+
+\subsection{Research Problem}
+
+No existing framework simultaneously addresses:
+\begin{itemize}
+  \item Device-level authentication resistant to quantum-enhanced spoofing
+  \item Privacy-preserving collective intelligence against unseen attacks
+  \item Automatic network topology restructuring after each threat event
+  \item Government-grade multi-stakeholder access control
+  \item Post-quantum cryptographic protection for all communications
+\end{itemize}
+
+\subsection{Our Approach: Bio-Inspired Self-Evolution}
+
+We draw explicit inspiration from the human immune system:
+\begin{itemize}
+  \item Quantum Behavioral Fingerprinting (QBF) serves as the device ``DNA''
+  \item Federated Adversarial Consciousness (FAC) provides adaptive immunity
+  \item Morphogenetic Blockchain acts as immune memory with topology healing
+\end{itemize}
+
+Table~\ref{tab:bio_analogy} maps biological mechanisms to ImmunoGrid components.
+
+\begin{table}[h]
+\caption{Bio-Inspired Architecture Mapping}
+\label{tab:bio_analogy}
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Biological System} & \textbf{ImmunoGrid Component} \\
+\midrule
+Body cell DNA       & Quantum Behavioral Fingerprint \\
+White blood cells   & Honeypot decoy network \\
+Adaptive immunity   & Federated Adversarial Consciousness \\
+Immune memory       & Morphogenetic Blockchain \\
+Morphogenesis       & Smart contract topology restructuring \\
+Nervous system      & AWS cloud mesh \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Contributions}
+
+The primary contributions of this work are:
+
+\begin{enumerate}
+  \item \textbf{Quantum Behavioral Fingerprinting (QBF)}: A novel device authentication
+        protocol encoding IoT behavioral profiles as quantum circuit states.
+        Impostor detection via quantum state fidelity achieves 95.8\% accuracy,
+        an 18.4\% F1-score improvement over classical threshold methods (Section~\ref{sec:qbf}).
+
+  \item \textbf{Federated Adversarial Consciousness (FAC)}: A novel FL architecture
+        where each device runs a conditional GAN, sharing adversarial imaginations
+        rather than raw data. The global model achieves 97.2\% accuracy after 20
+        rounds with $(\varepsilon=1.0, \delta=10^{-5})$-differential privacy
+        (Section~\ref{sec:fac}).
+
+  \item \textbf{Morphogenetic Blockchain (MB)}: A permissioned blockchain that
+        records attack immune memory and autonomously restructures network topology
+        via smart contracts. Response time improves from 847ms to 0.3ms
+        (Section~\ref{sec:mb}).
+
+  \item \textbf{Quantum Vulnerability Proof}: Empirical Qiskit simulations
+        demonstrating that RSA-2048 and ECC-256 are broken by quantum algorithms,
+        while CRYSTALS-Kyber-512 and Dilithium-2 remain quantum-safe
+        (Section~\ref{sec:eval}).
+
+  \item \textbf{Government-Grade Reference Platform}: A complete microservices
+        deployment with 13-role RBAC, 19 dashboards, and 500+ device simulation
+        (Section~\ref{sec:platform}).
+\end{enumerate}
+
+\subsection{Paper Organization}
+
+Section~\ref{sec:related} surveys related work. Sections~\ref{sec:qbf}--\ref{sec:mb}
+detail our three novel contributions. Section~\ref{sec:eval} presents experimental
+evaluation. Section~\ref{sec:platform} describes the reference platform.
+Section~\ref{sec:conclusion} concludes.

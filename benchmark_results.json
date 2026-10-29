@@ -1,0 +1,191 @@
+{
+  "table_1_fingerprint": {
+    "quantum_fingerprinting": {
+      "precision": 100.0,
+      "recall": 100.0,
+      "f1_score": 100.0,
+      "accuracy": 100.0,
+      "tp": 200,
+      "fp": 0,
+      "tn": 200,
+      "fn": 0
+    },
+    "classical_threshold": {
+      "precision": 100.0,
+      "recall": 75.47,
+      "f1_score": 86.02,
+      "accuracy": 83.75,
+      "tp": 200,
+      "fp": 0,
+      "tn": 135,
+      "fn": 65
+    },
+    "improvement_accuracy": 16.25,
+    "improvement_f1": 13.98,
+    "trials": 200
+  },
+  "table_2_crypto": {
+    "aes128_avg_ms": 0.0025,
+    "aes256_avg_ms": 0.0029,
+    "kyber512_kem_overhead_ms": 0.0941,
+    "total_pqc_ms": 0.097,
+    "overhead_ratio": 39.206
+  },
+  "table_3_detection": {
+    "by_type": {
+      "spoofing": {
+        "rate": 95.2,
+        "mechanism": "Quantum Fingerprint"
+      },
+      "man_in_the_middle": {
+        "rate": 94.1,
+        "mechanism": "PQC Signature Verify"
+      },
+      "ddos": {
+        "rate": 88.3,
+        "mechanism": "AI Brain (FAC)"
+      },
+      "data_poisoning": {
+        "rate": 91.7,
+        "mechanism": "AI Brain (FAC)"
+      },
+      "replay_attack": {
+        "rate": 89.4,
+        "mechanism": "Blockchain Nonce"
+      },
+      "ransomware": {
+        "rate": 93.0,
+        "mechanism": "AI + Blockchain Memory"
+      }
+    },
+    "overall_rate": 91.95
+  },
+  "table_4_fl": {
+    "rounds": [
+      {
+        "round": 1,
+        "accuracy": 64.89,
+        "loss": 1.034,
+        "participants": 499
+      },
+      {
+        "round": 2,
+        "accuracy": 68.74,
+        "loss": 0.8639,
+        "participants": 495
+      },
+      {
+        "round": 3,
+        "accuracy": 72.38,
+        "loss": 0.7151,
+        "participants": 490
+      },
+      {
+        "round": 4,
+        "accuracy": 75.73,
+        "loss": 0.6098,
+        "participants": 483
+      },
+      {
+        "round": 5,
+        "accuracy": 78.5,
+        "loss": 0.5239,
+        "participants": 499
+      },
+      {
+        "round": 6,
+        "accuracy": 80.49,
+        "loss": 0.4429,
+        "participants": 480
+      },
+      {
+        "round": 7,
+        "accuracy": 82.52,
+        "loss": 0.3625,
+        "participants": 480
+      },
+      {
+        "round": 8,
+        "accuracy": 84.51,
+        "loss": 0.2977,
+        "participants": 480
+      },
+      {
+        "round": 9,
+        "accuracy": 86.41,
+        "loss": 0.2508,
+        "participants": 482
+      },
+      {
+        "round": 10,
+        "accuracy": 87.7,
+        "loss": 0.2273,
+        "participants": 495
+      },
+      {
+        "round": 11,
+        "accuracy": 89.08,
+        "loss": 0.1914,
+        "participants": 490
+      },
+      {
+        "round": 12,
+        "accuracy": 90.11,
+        "loss": 0.1679,
+        "participants": 487
+      },
+      {
+        "round": 13,
+        "accuracy": 91.41,
+        "loss": 0.1445,
+        "participants": 483
+      },
+      {
+        "round": 14,
+        "accuracy": 92.09,
+        "loss": 0.1117,
+        "participants": 490
+      },
+      {
+        "round": 15,
+        "accuracy": 92.62,
+        "loss": 0.0888,
+        "participants": 496
+      },
+      {
+        "round": 16,
+        "accuracy": 92.82,
+        "loss": 0.0821,
+        "participants": 490
+      },
+      {
+        "round": 17,
+        "accuracy": 93.46,
+        "loss": 0.0637,
+        "participants": 499
+      },
+      {
+        "round": 18,
+        "accuracy": 93.92,
+        "loss": 0.05,
+        "participants": 495
+      },
+      {
+        "round": 19,
+        "accuracy": 94.96,
+        "loss": 0.05,
+        "participants": 492
+      },
+      {
+        "round": 20,
+        "accuracy": 95.51,
+        "loss": 0.0586,
+        "participants": 492
+      }
+    ],
+    "convergence_round": 20,
+    "final_accuracy": 95.51
+  },
+  "generated_at": "2026-07-28T09:07:07.865748",
+  "system": "ImmunoGrid v1.0"
+}

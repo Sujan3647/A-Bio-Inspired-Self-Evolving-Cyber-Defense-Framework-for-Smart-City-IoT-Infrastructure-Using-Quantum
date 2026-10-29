@@ -1,0 +1,243 @@
+---
+# ImmunoGrid — Kubernetes StatefulSets for Databases
+# Persistent, ordered pods for PostgreSQL, MongoDB, Redis
+# Apply: kubectl apply -f devops/k8s/statefulsets.yaml
+
+# ── PostgreSQL StatefulSet ────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: immunogrid-postgres
+  namespace: immunogrid
+  labels:
+    app: immunogrid-postgres
+spec:
+  serviceName: immunogrid-postgres-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immunogrid-postgres
+  template:
+    metadata:
+      labels:
+        app: immunogrid-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: immunogrid_prod
+            - name: POSTGRES_USER
+              value: immunogrid
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immunogrid-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "immunogrid"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "immunogrid"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: 20Gi
+
+---
+# ── MongoDB StatefulSet ───────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: immunogrid-mongo
+  namespace: immunogrid
+spec:
+  serviceName: immunogrid-mongo-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immunogrid-mongo
+  template:
+    metadata:
+      labels:
+        app: immunogrid-mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7-jammy
+          ports:
+            - containerPort: 27017
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+# ── Redis StatefulSet ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: immunogrid-redis
+  namespace: immunogrid
+spec:
+  serviceName: immunogrid-redis-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immunogrid-redis
+  template:
+    metadata:
+      labels:
+        app: immunogrid-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          command:
+            - redis-server
+            - "--requirepass"
+            - "$(REDIS_PASSWORD)"
+            - "--maxmemory"
+            - "512mb"
+            - "--maxmemory-policy"
+            - "allkeys-lru"
+            - "--save"
+            - "60 1"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immunogrid-secrets
+                  key: POSTGRES_PASSWORD   # reuse same secret slot
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: 5Gi
+
+---
+# ── MQTT Broker (Mosquitto) Deployment ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immunogrid-mqtt
+  namespace: immunogrid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immunogrid-mqtt
+  template:
+    metadata:
+      labels:
+        app: immunogrid-mqtt
+    spec:
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2
+          ports:
+            - containerPort: 1883
+            - containerPort: 9001
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: mosquitto-config
+              mountPath: /mosquitto/config
+      volumes:
+        - name: mosquitto-config
+          configMap:
+            name: mosquitto-config
+
+---
+# Mosquitto ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: immunogrid
+data:
+  mosquitto.conf: |
+    listener 1883
+    allow_anonymous true
+    listener 9001
+    protocol websockets
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest stdout
+    log_type all

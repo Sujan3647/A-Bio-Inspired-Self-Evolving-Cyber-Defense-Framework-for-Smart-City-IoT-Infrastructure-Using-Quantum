@@ -1,0 +1,72 @@
+---
+# ImmunoGrid — Kubernetes ConfigMap
+# Non-sensitive configuration values for all pods
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immunogrid-config
+  namespace: immunogrid
+  labels:
+    app: immunogrid
+    version: "1.0.0"
+data:
+  # Application settings
+  APP_NAME: "ImmunoGrid"
+  APP_ENV: "production"
+  APP_VERSION: "1.0.0"
+
+  # Quantum Engine
+  QUANTUM_BACKEND: "AerSimulator"
+  QUANTUM_NUM_QUBITS: "4"
+  QBF_FIDELITY_THRESHOLD: "0.92"
+
+  # Federated Learning
+  FL_MIN_CLIENTS: "10"
+  FL_ROUNDS_PER_DAY: "20"
+  FL_NOISE_MULTIPLIER: "1.1"
+  FL_MAX_GRAD_NORM: "1.0"
+  FL_EPSILON: "1.0"
+
+  # Blockchain
+  BLOCKCHAIN_DIFFICULTY: "2"
+  BLOCKCHAIN_CHANNEL: "immunogrid-channel"
+  BLOCKCHAIN_CHAINCODE: "immunogrid-chaincode"
+
+  # Honeypot
+  HONEYPOT_BASE_COUNT: "5"
+  HONEYPOT_SPAWN_ON_ATTACK: "3"
+
+  # IoT Simulator
+  IOT_TOTAL_DEVICES: "500"
+  IOT_ATTACK_INTERVAL_SECONDS: "8"
+
+  # Monitoring
+  PROMETHEUS_PORT: "9090"
+  GRAFANA_PORT: "3001"
+  LOG_LEVEL: "INFO"
+
+  # RBAC
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRE_MINUTES: "30"
+  RBAC_ROLES_COUNT: "13"
+
+---
+# Secret reference (actual values stored in AWS Secrets Manager)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: immunogrid-secrets
+  namespace: immunogrid
+  annotations:
+    # In production: sync from AWS Secrets Manager using External Secrets Operator
+    external-secrets.io/backend: "aws-secretsmanager"
+    external-secrets.io/key: "immunogrid/production/secrets"
+type: Opaque
+stringData:
+  # These are placeholders — replaced by actual secrets at deploy time
+  POSTGRES_PASSWORD: "REPLACE_AT_DEPLOY_TIME"
+  JWT_SECRET_KEY: "REPLACE_AT_DEPLOY_TIME"
+  AWS_ACCESS_KEY_ID: "REPLACE_AT_DEPLOY_TIME"
+  AWS_SECRET_ACCESS_KEY: "REPLACE_AT_DEPLOY_TIME"
+  BLOCKCHAIN_PRIVATE_KEY: "REPLACE_AT_DEPLOY_TIME"

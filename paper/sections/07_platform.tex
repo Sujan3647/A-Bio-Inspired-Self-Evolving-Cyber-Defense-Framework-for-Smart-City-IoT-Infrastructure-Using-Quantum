@@ -1,0 +1,103 @@
+% ImmunoGrid — Section VII: Platform Architecture
+
+\section{Reference Platform Architecture}
+\label{sec:platform}
+
+\subsection{Microservices Design}
+
+ImmunoGrid is deployed as a government-grade microservices platform
+comprising 14 FastAPI routers, three database backends, and a React.js
+web application with 19 role-specific dashboards. The architecture follows
+a layered design:
+
+\begin{enumerate}
+  \item \textbf{IoT Layer}: 500+ virtual devices via Python asyncio
+        (production: AWS IoT Greengrass + MQTT)
+  \item \textbf{Security Layer}: QBF engine, PQC-TLS, FAC AI Brain
+  \item \textbf{Blockchain Layer}: Morphogenetic Blockchain + PBFT consensus
+  \item \textbf{API Layer}: FastAPI microservices with JWT + RBAC
+  \item \textbf{Presentation Layer}: React.js dashboard + WebSocket live feed
+  \item \textbf{Infrastructure}: AWS (IoT Core, SageMaker, Lambda, CloudWatch)
+\end{enumerate}
+
+\subsection{Role-Based Access Control}
+
+Thirteen government roles are defined with sector-specific permissions:
+
+\begin{table}[h]
+\caption{ImmunoGrid Government RBAC (13 Roles)}
+\label{tab:rbac}
+\centering
+\small
+\begin{tabular}{lp{5cm}}
+\toprule
+\textbf{Role} & \textbf{Access Scope} \\
+\midrule
+Super Admin & Full system, all sectors, all operations \\
+National Security Officer & All sectors read, trigger morphogenesis \\
+City IT Manager & All sectors, user management \\
+Traffic Ministry & Traffic sector only \\
+Health Ministry & Hospital sector only \\
+Water Authority & Water sector only \\
+Energy Ministry & Power sector only \\
+Blockchain Auditor & Read-only blockchain ledger \\
+AI/ML Engineer & FL model dashboard only \\
+Quantum Analyst & QBF engine + fingerprint stats \\
+DevOps Engineer & Infrastructure + CI/CD \\
+Field Technician & Mobile view, assigned devices only \\
+Government Auditor & Read-only compliance reports \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{AWS Cloud Deployment}
+
+Table~\ref{tab:aws_services} maps ImmunoGrid components to AWS services:
+
+\begin{table}[h]
+\caption{ImmunoGrid AWS Cloud Services Mapping}
+\label{tab:aws_services}
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{AWS Service} & \textbf{ImmunoGrid Role} \\
+\midrule
+IoT Core    & Device connection + message routing \\
+Greengrass  & Edge AI (FAC local trainer) \\
+SageMaker   & FL aggregation server \\
+Lambda      & Message processor (PQC verify + BC write) \\
+Managed Blockchain & Hyperledger Fabric production \\
+CloudWatch  & Metrics + attack rate alerting \\
+SNS         & Security alert notifications \\
+S3          & Message archive + model storage \\
+EKS         & Kubernetes microservices deployment \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{IoT Simulation}
+
+The Python IoT simulator provides a flight-simulator analog for testing
+ImmunoGrid security without risk to real infrastructure. Eight device types
+(Table~\ref{tab:device_types}) are simulated with realistic behavioral profiles
+extracted from published IoT traffic datasets.
+
+\begin{table}[h]
+\caption{Simulated Smart City Device Types (500 total)}
+\label{tab:device_types}
+\centering
+\begin{tabular}{llcc}
+\toprule
+\textbf{Device Type} & \textbf{Sector} & \textbf{Count} & \textbf{Send Interval} \\
+\midrule
+Traffic Sensor    & Traffic      & 100 & 2.0s \\
+Street Camera     & Surveillance & 80  & 1.5s \\
+Water Monitor     & Water        & 60  & 5.0s \\
+Hospital Device   & Hospital     & 80  & 3.0s \\
+Power Sensor      & Power        & 80  & 1.0s \\
+Metro Sensor      & Metro        & 50  & 3.0s \\
+Airport Device    & Airport      & 30  & 4.0s \\
+Govt Office Node  & Government   & 20  & 6.0s \\
+\bottomrule
+\end{tabular}
+\end{table}

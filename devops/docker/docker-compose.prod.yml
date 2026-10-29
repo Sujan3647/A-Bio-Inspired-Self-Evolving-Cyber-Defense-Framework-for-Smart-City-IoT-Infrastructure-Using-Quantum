@@ -1,0 +1,258 @@
+# ImmunoGrid — Production Docker Compose
+# Full production stack with Nginx, SSL, monitoring
+#
+# Usage:
+#   cp .env.example .env.prod && nano .env.prod     (fill in secrets)
+#   docker-compose -f docker-compose.prod.yml up -d
+#   docker-compose -f docker-compose.prod.yml logs -f api
+
+services:
+
+  # ── Nginx (SSL termination + reverse proxy) ────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: immunogrid-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+    networks: [immunogrid]
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Backend API (4 uvicorn workers) ───────────────────────────────────────
+  api:
+    image: immunogrid/api:${IMAGE_TAG:-latest}
+    container_name: immunogrid-api
+    env_file: .env.prod
+    environment:
+      - APP_ENV=production
+      - WORKERS=4
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mqtt:
+        condition: service_started
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── Frontend (pre-built static, served by nginx inside container) ──────────
+  frontend:
+    image: immunogrid/frontend:${IMAGE_TAG:-latest}
+    container_name: immunogrid-frontend
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ── PostgreSQL 15 ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: immunogrid-postgres-prod
+    env_file: .env.prod
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-immunogrid_prod}
+      POSTGRES_USER:     ${POSTGRES_USER:-immunogrid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-immunogrid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  # ── MongoDB 7 ─────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7-jammy
+    container_name: immunogrid-mongo-prod
+    volumes:
+      - mongo_data:/data/db
+      - mongo_backups:/backups
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  # ── Redis 7 ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: immunogrid-redis-prod
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-changeme}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 768M
+
+  # ── MQTT Broker (TLS) ─────────────────────────────────────────────────────
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: immunogrid-mqtt-prod
+    ports:
+      - "8883:8883"     # TLS MQTT
+    volumes:
+      - ./mosquitto-prod.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./ssl:/mosquitto/ssl:ro
+      - mqtt_data:/mosquitto/data
+    restart: unless-stopped
+    networks: [immunogrid]
+
+  # ── Prometheus ────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: immunogrid-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ../../devops/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../devops/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks: [immunogrid]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  # ── Grafana ───────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: immunogrid-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-immunogrid_admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../../devops/monitoring/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/immunogrid.json:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks: [immunogrid]
+
+  # ── Node Exporter (host metrics for Prometheus) ───────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: immunogrid-node-exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+    networks: [immunogrid]
+
+  # ── Alertmanager ──────────────────────────────────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: immunogrid-alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml:ro
+    restart: unless-stopped
+    networks: [immunogrid]
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_backups:
+    driver: local
+  mongo_data:
+    driver: local
+  mongo_backups:
+    driver: local
+  redis_data:
+    driver: local
+  mqtt_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  immunogrid:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

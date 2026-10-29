@@ -1,0 +1,4 @@
+# ImmunoGrid Lambda dependencies
+# Install via: pip install -r requirements.txt -t ./package
+boto3==1.34.75
+structlog==24.1.0

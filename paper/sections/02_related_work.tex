@@ -1,0 +1,85 @@
+% ImmunoGrid — Section II: Related Work
+
+\section{Related Work}
+\label{sec:related}
+
+\subsection{IoT Security in Smart Cities}
+
+The security of smart city IoT infrastructure has been studied extensively
+from the perspective of intrusion detection~\cite{meidan2018n}, blockchain-based
+access control~\cite{theodorou2019blockchain}, and AI-driven anomaly
+detection~\cite{mdpi2024ai}. Ahmed et~al.~\cite{ahmed2024fl} combine federated
+learning with blockchain for smart city security, achieving 94.2\% anomaly
+detection accuracy. However, their framework lacks quantum-resistant cryptography,
+adversarial imagination generation, and autonomous topology morphogenesis.
+
+\subsection{Device Fingerprinting and Authentication}
+
+Classical behavioral device fingerprinting uses timing, packet characteristics,
+and traffic patterns~\cite{radhakrishnan2023iot}. These threshold-based approaches
+fail against sophisticated spoofing attacks that closely mimic device behavior.
+Quantum machine learning has been applied to network intrusion
+detection~\cite{mdpi2025qf} but not to device-level behavioral authentication.
+Our QBF approach encodes behavior as quantum states, providing exponentially
+more sensitive discrimination via fidelity measurement.
+
+\subsection{Federated Learning Security}
+
+Federated learning for IoT anomaly detection~\cite{aledhari2020federated} shares
+only model gradients. Adversarial federated learning has been studied for model
+robustness~\cite{goodfellow2014gan} but not in the context of IoT device
+imagination sharing. Our FAC architecture uniquely shares synthesized attack
+scenarios — not gradients or raw data — enabling collective pre-hardening.
+Byzantine-robust FedAvg~\cite{mcmahan2017fedavg} provides the aggregation
+foundation, extended with GAN-based imagination generation.
+
+\subsection{Post-Quantum Cryptography for IoT}
+
+NIST standardized CRYSTALS-Kyber and Dilithium in 2024~\cite{nist2024pqc}.
+Their application to IoT has been studied~\cite{khalid2026pqc} primarily as
+standalone protocol evaluations. Our work integrates PQC into a complete
+operational platform, including key lifecycle management, PQC-TLS handshakes,
+and on-chain key registry with rotation tracking.
+
+\subsection{Blockchain for Security}
+
+Blockchain-based intrusion detection surveys~\cite{theodorou2019blockchain}
+show immutable audit trails improve forensics. Self-healing blockchain in
+microgrids~\cite{hyperledger2018fabric} responds to attacks but does not
+physically restructure network topology. Our Morphogenetic Blockchain
+uniquely combines immune memory with autonomous defense restructuring via
+smart contract morphogenesis.
+
+\subsection{Bio-Inspired Security}
+
+Bio-inspired approaches have been applied to hardware Trojan
+detection~\cite{frontiers2025defense} and anomaly detection in cyber-physical
+systems. Neuromorphic approaches~\cite{frontiers2025defense} model cognitive
+defense but do not integrate quantum fingerprinting or blockchain immune memory.
+ImmunoGrid provides the first unified bio-inspired framework combining quantum,
+blockchain, and federated AI.
+
+\subsection{Research Gap}
+
+Table~\ref{tab:comparison} positions ImmunoGrid against the most related works.
+No existing system combines: (1) quantum behavioral device fingerprinting,
+(2) federated adversarial imagination sharing, (3) morphogenetic blockchain
+topology restructuring, (4) post-quantum cryptography, and
+(5) government-grade RBAC in a single deployable framework.
+
+\begin{table*}[t]
+\caption{Comparison of ImmunoGrid with Related Frameworks}
+\label{tab:comparison}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Framework} & \textbf{QBF} & \textbf{FAC} & \textbf{Morph. BC} & \textbf{PQC} & \textbf{RBAC} \\
+\midrule
+Ahmed et al.~\cite{ahmed2024fl}            & \texttimes & \texttimes & \texttimes & \texttimes & Partial \\
+Theodorou \& Sklavos~\cite{theodorou2019blockchain} & \texttimes & \texttimes & \texttimes & \texttimes & \texttimes \\
+Khalid et al.~\cite{khalid2026pqc}         & \texttimes & \texttimes & \texttimes & \checkmark & \texttimes \\
+Frontiers NCT~\cite{frontiers2025defense}  & \texttimes & Partial    & \texttimes & \texttimes & \texttimes \\
+\textbf{ImmunoGrid (Ours)}                 & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table*}

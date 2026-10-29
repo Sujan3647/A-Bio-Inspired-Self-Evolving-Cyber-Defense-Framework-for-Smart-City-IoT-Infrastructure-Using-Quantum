@@ -1,0 +1,97 @@
+---
+# ImmunoGrid — Kubernetes Horizontal Pod Autoscaler
+# Auto-scales API pods based on CPU + custom ImmunoGrid metrics
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: immunogrid-api-hpa
+  namespace: immunogrid
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: immunogrid-api
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    # CPU-based scaling
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # Memory-based scaling
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+    # Custom: Scale on high attack rate
+    - type: Pods
+      pods:
+        metric:
+          name: immunogrid_attacks_per_minute
+        target:
+          type: AverageValue
+          averageValue: "10"
+
+  behavior:
+    scaleUp:
+      # Scale up quickly during attacks
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 30
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+      selectPolicy: Max
+
+    scaleDown:
+      # Scale down slowly (don't kill pods during active defense)
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+
+---
+# HPA for Quantum Engine (CPU-intensive)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: immunogrid-quantum-hpa
+  namespace: immunogrid
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: immunogrid-api
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+
+---
+# Pod Disruption Budget — ensure availability during updates
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: immunogrid-api-pdb
+  namespace: immunogrid
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: immunogrid-api

@@ -1,0 +1,80 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@immunogrid.gov'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+
+# Routing tree
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity', 'team']
+  group_wait:      30s
+  group_interval:  5m
+  repeat_interval: 4h
+
+  routes:
+    # Critical security → immediate + SMS
+    - match:
+        severity: critical
+      receiver: security-critical
+      repeat_interval: 1h
+
+    # Blockchain integrity → immediate
+    - match:
+        alertname: BlockchainIntegrityFailure
+      receiver: blockchain-alert
+      repeat_interval: 30m
+
+    # AI/ML team
+    - match:
+        team: ai
+      receiver: ai-team
+      repeat_interval: 2h
+
+    # Ops team
+    - match:
+        team: ops
+      receiver: ops-team
+      repeat_interval: 4h
+
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'devops@immunogrid.gov'
+        subject: '[ImmunoGrid] {{ .CommonAnnotations.summary }}'
+        html: |
+          <h2>ImmunoGrid Security Alert</h2>
+          <p><b>Alert:</b> {{ .CommonAnnotations.summary }}</p>
+          <p><b>Description:</b> {{ .CommonAnnotations.description }}</p>
+          <p><b>Severity:</b> {{ .CommonLabels.severity }}</p>
+          <p><b>Time:</b> {{ .CommonAnnotations.startsAt }}</p>
+
+  - name: 'security-critical'
+    email_configs:
+      - to: 'security@immunogrid.gov,admin@immunogrid.gov'
+        subject: '🚨 CRITICAL [ImmunoGrid] {{ .CommonAnnotations.summary }}'
+        send_resolved: true
+
+  - name: 'blockchain-alert'
+    email_configs:
+      - to: 'blockchain@immunogrid.gov'
+        subject: '⛓️ CRITICAL [Blockchain] {{ .CommonAnnotations.summary }}'
+
+  - name: 'ai-team'
+    email_configs:
+      - to: 'ai-ml@immunogrid.gov'
+        subject: '🤖 [AI Brain] {{ .CommonAnnotations.summary }}'
+
+  - name: 'ops-team'
+    email_configs:
+      - to: 'devops@immunogrid.gov'
+        subject: '🛠️ [Ops] {{ .CommonAnnotations.summary }}'
+
+inhibit_rules:
+  # If blockchain is down, suppress secondary alerts
+  - source_match:
+      alertname: BlockchainIntegrityFailure
+    target_match:
+      team: blockchain
+    equal: ['alertname']

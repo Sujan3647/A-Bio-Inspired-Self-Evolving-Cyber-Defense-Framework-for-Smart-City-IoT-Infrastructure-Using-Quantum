@@ -1,0 +1,62 @@
+services:
+  # ── ImmunoGrid Backend API ─────────────────────────────────────────
+  api:
+    build: .
+    container_name: immunogrid-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - POSTGRES_HOST=postgres
+      - MONGO_URI=mongodb://mongo:27017/immunogrid
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    volumes:
+      - .:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── PostgreSQL ────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: immunogrid-postgres
+    environment:
+      POSTGRES_DB: immunogrid
+      POSTGRES_USER: immunogrid_user
+      POSTGRES_PASSWORD: immunogrid_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ── MongoDB ──────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7-jammy
+    container_name: immunogrid-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # ── Redis ────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: immunogrid-redis
+    ports:
+      - "6379:6379"
+
+  # ── MQTT Broker (Mosquitto) ──────────────────────────────────────
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: immunogrid-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+volumes:
+  postgres_data:
+  mongo_data:

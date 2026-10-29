@@ -1,0 +1,157 @@
+version: "3.9"
+
+# ImmunoGrid — Hyperledger Fabric Network
+# 4 peers across 2 organizations + 1 orderer
+#
+# Start:  docker-compose up -d
+# Stop:   docker-compose down -v
+
+networks:
+  immunogrid-fabric:
+    driver: bridge
+
+services:
+
+  # ── Orderer ──────────────────────────────────────────────────────────────────
+  orderer.immunogrid.gov:
+    image: hyperledger/fabric-orderer:2.5
+    container_name: orderer.immunogrid.gov
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=ImmunoGridOrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/genesis.block
+      - ./crypto-config/ordererOrganizations/immunogrid.gov/orderers/orderer.immunogrid.gov/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/immunogrid.gov/orderers/orderer.immunogrid.gov/tls:/var/hyperledger/orderer/tls
+    ports:
+      - 7050:7050
+    networks:
+      - immunogrid-fabric
+
+  # ── Org1 Peers ────────────────────────────────────────────────────────────────
+  peer0.org1.immunogrid.gov:
+    image: hyperledger/fabric-peer:2.5
+    container_name: peer0.org1.immunogrid.gov
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer0.org1.immunogrid.gov
+      - CORE_PEER_ADDRESS=peer0.org1.immunogrid.gov:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org1.immunogrid.gov:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1.immunogrid.gov:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.immunogrid.gov:7051
+      - CORE_PEER_LOCALMSPID=ImmunoGridOrg1MSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - /var/run:/host/var/run
+      - ./crypto-config/peerOrganizations/org1.immunogrid.gov/peers/peer0.org1.immunogrid.gov/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/org1.immunogrid.gov/peers/peer0.org1.immunogrid.gov/tls:/etc/hyperledger/fabric/tls
+    depends_on:
+      - orderer.immunogrid.gov
+    ports:
+      - 7051:7051
+    networks:
+      - immunogrid-fabric
+
+  peer1.org1.immunogrid.gov:
+    image: hyperledger/fabric-peer:2.5
+    container_name: peer1.org1.immunogrid.gov
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer1.org1.immunogrid.gov
+      - CORE_PEER_ADDRESS=peer1.org1.immunogrid.gov:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1.immunogrid.gov:8051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.immunogrid.gov:7051
+      - CORE_PEER_LOCALMSPID=ImmunoGridOrg1MSP
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - /var/run:/host/var/run
+      - ./crypto-config/peerOrganizations/org1.immunogrid.gov/peers/peer1.org1.immunogrid.gov/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/org1.immunogrid.gov/peers/peer1.org1.immunogrid.gov/tls:/etc/hyperledger/fabric/tls
+    depends_on:
+      - orderer.immunogrid.gov
+    ports:
+      - 8051:8051
+    networks:
+      - immunogrid-fabric
+
+  # ── SecurityOrg Peer ──────────────────────────────────────────────────────────
+  peer0.security.immunogrid.gov:
+    image: hyperledger/fabric-peer:2.5
+    container_name: peer0.security.immunogrid.gov
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer0.security.immunogrid.gov
+      - CORE_PEER_ADDRESS=peer0.security.immunogrid.gov:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.security.immunogrid.gov:9051
+      - CORE_PEER_LOCALMSPID=SecurityOrgMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - /var/run:/host/var/run
+      - ./crypto-config/peerOrganizations/security.immunogrid.gov/peers/peer0.security.immunogrid.gov/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/security.immunogrid.gov/peers/peer0.security.immunogrid.gov/tls:/etc/hyperledger/fabric/tls
+    depends_on:
+      - orderer.immunogrid.gov
+    ports:
+      - 9051:9051
+    networks:
+      - immunogrid-fabric
+
+  # ── CouchDB State Databases ───────────────────────────────────────────────────
+  couchdb0:
+    image: couchdb:3.3.3
+    container_name: couchdb0
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 5984:5984
+    networks:
+      - immunogrid-fabric
+
+  couchdb1:
+    image: couchdb:3.3.3
+    container_name: couchdb1
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 6984:6984
+    networks:
+      - immunogrid-fabric
+
+  # ── Fabric CA ─────────────────────────────────────────────────────────────────
+  ca.org1.immunogrid.gov:
+    image: hyperledger/fabric-ca:1.5
+    container_name: ca.org1.immunogrid.gov
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org1
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    ports:
+      - 7054:7054
+    networks:
+      - immunogrid-fabric
